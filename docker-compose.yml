@@ -1,0 +1,12 @@
+version: '3.9'
+
+services:
+  web:
+    build: ./src
+    command: gunicorn -w 3 -b :8000 demo_app.wsgi:application
+    volumes:
+      - ./src:/usr/src/app/
+    ports:
+      - 1337:8000
+    environment:
+      - DEBUG=1

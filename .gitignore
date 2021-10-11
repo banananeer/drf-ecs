@@ -1,0 +1,6 @@
+/src/db.sqlite3
+/terraform/.terraform/
+/terraform/plan
+/terraform/terraform.tfstate
+/terraform/terraform.tfstate.backup
+/.idea/
