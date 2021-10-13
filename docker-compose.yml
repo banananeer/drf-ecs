@@ -4,7 +4,7 @@ services:
   web:
     container_name: api
     build: .
-#    command: gunicorn -w 3 -b :8000 demo_app.wsgi:application --log-level=critical
+#    command: gunicorn -w 3 -b :8000 demo_proj.wsgi:application --log-level=critical
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - ./src:/usr/src/app/
@@ -24,7 +24,7 @@ services:
   celery:
     container_name: celery
     build: .
-    command: celery -A demo_app worker -l INFO
+    command: celery -A demo_proj worker -l INFO
     volumes:
       - ./src:/usr/src/app/
     environment:

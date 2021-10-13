@@ -1,4 +1,4 @@
-"""demo_app URL Configuration
+"""demo_proj URL Configuration
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/3.2/topics/http/urls/
@@ -15,16 +15,16 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from demo_app.views import healthcheck
+
+from demo_proj.views import healthcheck
 from django.contrib.auth.models import User
 from rest_framework import routers, serializers, viewsets
-
 
 # Serializers define the API representation.
 from demo_task_app.views import get_status, run_task
 
 
-class UserSerializer(serializers.HyperlinkedModelSerializer):
+class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['url', 'username', 'email', 'is_staff']
