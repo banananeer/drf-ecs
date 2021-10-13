@@ -8,14 +8,21 @@ services:
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - ./src:/usr/src/app/
+      - ./entrypoint.sh:/usr/src/app/entrypoint.sh
     ports:
       - 1337:8000
     environment:
       - DEBUG=1
       - REDIS_PORT=6379
       - REDIS_HOST=redis
+      - DB_NAME=hello_django_dev
+      - DB_USER=hello_django
+      - DB_PASSWORD=hello_django
+      - DB_HOST=db
+      - DB_PORT=5432
     depends_on:
       - redis
+      - db
 
   redis:
     container_name: redis
@@ -27,7 +34,34 @@ services:
     command: celery -A demo_proj worker -l INFO
     volumes:
       - ./src:/usr/src/app/
+      - ./entrypoint.sh:/usr/src/app/entrypoint.sh
     environment:
       - DEBUG=1
       - REDIS_PORT=6379
       - REDIS_HOST=redis
+    depends_on:
+      - redis
+      - db
+
+  scheduler:
+    container_name: scheduler
+    build: .
+    command: celery -A demo_proj beat -l INFO
+    volumes:
+      - ./src:/usr/src/app/
+      - ./entrypoint.sh:/usr/src/app/entrypoint.sh
+    environment:
+      - DEBUG=1
+      - REDIS_PORT=6379
+      - REDIS_HOST=redis
+    depends_on:
+      - redis
+      - db
+
+  db:
+    container_name: db
+    image: postgres:14.0-alpine3.14
+    environment:
+      - POSTGRES_USER=hello_django
+      - POSTGRES_PASSWORD=hello_django
+      - POSTGRES_DB=hello_django_dev

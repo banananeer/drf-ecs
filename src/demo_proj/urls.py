@@ -20,10 +20,10 @@ from demo_proj.views import healthcheck
 from django.contrib.auth.models import User
 from rest_framework import routers, serializers, viewsets
 
-# Serializers define the API representation.
 from demo_task_app.views import get_status, run_task
 
 
+# Serializers define the API representation.
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
