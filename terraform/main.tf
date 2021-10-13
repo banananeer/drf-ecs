@@ -3,6 +3,7 @@ provider "aws" {
 }
 
 data "aws_caller_identity" "current" {}
+
 data "aws_region" "current" {}
 
 module "vpc" {
@@ -339,7 +340,6 @@ resource "aws_iam_role" "ecs_role" {
 }
 
 # Start ECS Service for Django application
-
 resource "aws_cloudwatch_log_group" "django-log-group" {
   name              = "/ecs/demo-django-app"
   retention_in_days = 7
@@ -349,7 +349,6 @@ resource "aws_cloudwatch_log_stream" "django-log-stream" {
   name           = "demo-django-app-log-stream"
   log_group_name = aws_cloudwatch_log_group.django-log-group.name
 }
-
 
 resource "aws_ecs_service" "demo_django_app" {
   name            = "demo_django_app"
