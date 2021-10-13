@@ -1,4 +1,0 @@
-django-rest-framework
-gunicorn
-psycopg2-binary
-celery[redis]
