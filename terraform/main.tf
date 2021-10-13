@@ -3,6 +3,7 @@ provider "aws" {
 }
 
 data "aws_caller_identity" "current" {}
+data "aws_region" "current" {}
 
 module "vpc" {
   source = "terraform-aws-modules/vpc/aws"
@@ -174,7 +175,7 @@ module "db" {
   engine         = "aurora-postgresql"
   engine_version = "13.3"
   instance_type  = "db.t4g.medium"
-  database_name = "demo_django_app"
+  database_name  = "demo_django_app"
 
   vpc_id  = module.vpc.vpc_id
   subnets = module.vpc.private_subnets
@@ -201,86 +202,43 @@ module "db" {
   }
 }
 
-resource "aws_ecs_service" "demo_django_app" {
-  name            = "demo_django_app"
-  cluster         = module.ecs_cluster.ecs_cluster_id
-  task_definition = aws_ecs_task_definition.service.arn
-  desired_count   = 2
+module "redis" {
+  source = "cloudposse/elasticache-redis/aws"
+  # Cloud Posse recommends pinning every module to a specific version
+  version                          = "0.40.1"
+  name                             = "demo-django-app"
+  vpc_id                           = module.vpc.vpc_id
+  subnets                          = module.vpc.private_subnets
+  cluster_size                     = 1
+  instance_type                    = "cache.t2.micro"
+  apply_immediately                = true
+  automatic_failover_enabled       = false
+  engine_version                   = "6.x"
+  family                           = "redis6.x"
+  at_rest_encryption_enabled       = false
+  transit_encryption_enabled       = false
+  cloudwatch_metric_alarms_enabled = false
 
-  //  enable_execute_command = true
+  security_group_rules = [
+    {
+      type                     = "ingress"
+      from_port                = 0
+      to_port                  = 65535
+      protocol                 = "-1"
+      cidr_blocks              = []
+      source_security_group_id = module.fargate_container_sg.security_group_id
+      description              = "Allow all inbound traffic from trusted Security Groups"
+    },
+  ]
 
-  launch_type = "FARGATE"
-
-  load_balancer {
-    target_group_arn = module.nlb.target_group_arns[0]
-    container_name   = "django"
-    container_port   = 8000
-  }
-
-  network_configuration {
-    subnets          = module.vpc.private_subnets
-    security_groups  = [module.fargate_container_sg.security_group_id]
-    assign_public_ip = false
-  }
 }
 
-resource "aws_ecs_task_definition" "service" {
-  family                   = "demo_django_app"
-  requires_compatibilities = ["FARGATE"]
-  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
-  cpu                      = 256
-  memory                   = 512
-  container_definitions = jsonencode([
-    {
-      name  = "django"
-      image = "${aws_ecr_repository.demo_app.repository_url}:latest"
-      command : ["gunicorn", "-w", "3", "-b", ":8000", "demo_app.wsgi:application"],
-      cpu       = 256
-      memory    = 512
-      essential = true
-      portMappings = [
-        {
-          containerPort = 8000
-          hostPort      = 8000
-          protocol      = "tcp"
-        }
-      ]
-      healthcheck = {
-        command     = ["true"]
-        interval    = 5
-        retries     = 10
-        startPeriod = 5
-        timeout     = 5
-      }
-      environment = [
-        {
-          "name": "RDS_DB_NAME",
-          "value": module.db.this_rds_cluster_database_name
-        },
-        {
-          "name": "RDS_USERNAME",
-          "value": module.db.this_rds_cluster_master_username
-        },
-        {
-          "name": "RDS_PASSWORD",
-          "value": tostring(module.db.this_rds_cluster_master_password)
-        },
-        {
-          "name": "RDS_HOSTNAME",
-          "value": module.db.this_rds_cluster_endpoint
-        },
-        {
-          "name": "RDS_PORT",
-          "value": tostring(module.db.this_rds_cluster_port)
-        }
-      ],
-      mountPoints = []
-      volumesFrom = []
-    }
-  ])
-  network_mode = "awsvpc"
-  tags = {
-    Project = "demo_django_app"
+resource "aws_ecr_repository" "demo_app" {
+  name                 = "demo_django_app"
+  image_tag_mutability = "MUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = true
   }
 }
 
@@ -380,12 +338,196 @@ resource "aws_iam_role" "ecs_role" {
   }
 }
 
-resource "aws_ecr_repository" "demo_app" {
-  name                 = "demo_django_app"
-  image_tag_mutability = "MUTABLE"
+# Start ECS Service for Django application
 
-  image_scanning_configuration {
-    scan_on_push = true
+resource "aws_cloudwatch_log_group" "django-log-group" {
+  name              = "/ecs/demo-django-app"
+  retention_in_days = 7
+}
+
+resource "aws_cloudwatch_log_stream" "django-log-stream" {
+  name           = "demo-django-app-log-stream"
+  log_group_name = aws_cloudwatch_log_group.django-log-group.name
+}
+
+
+resource "aws_ecs_service" "demo_django_app" {
+  name            = "demo_django_app"
+  cluster         = module.ecs_cluster.ecs_cluster_id
+  task_definition = aws_ecs_task_definition.service.arn
+  desired_count   = 2
+
+#  enable_execute_command = true
+
+  launch_type = "FARGATE"
+
+  load_balancer {
+    target_group_arn = module.nlb.target_group_arns[0]
+    container_name   = "django"
+    container_port   = 8000
+  }
+
+  network_configuration {
+    subnets          = module.vpc.private_subnets
+    security_groups  = [module.fargate_container_sg.security_group_id]
+    assign_public_ip = false
+  }
+}
+
+resource "aws_ecs_task_definition" "service" {
+  family                   = "demo_django_app"
+  requires_compatibilities = ["FARGATE"]
+  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
+  cpu                      = 256
+  memory                   = 512
+  container_definitions = jsonencode([
+    {
+      name      = "django"
+      image     = "${aws_ecr_repository.demo_app.repository_url}:latest"
+      command   = ["gunicorn", "-w", "3", "-b", ":8000", "demo_app.wsgi:application"],
+      cpu       = 256
+      memory    = 512
+      essential = true
+      portMappings = [
+        {
+          containerPort = 8000
+          hostPort      = 8000
+          protocol      = "tcp"
+        }
+      ]
+      healthcheck = {
+        command     = ["true"]
+        interval    = 5
+        retries     = 10
+        startPeriod = 5
+        timeout     = 5
+      }
+      environment = [
+        {
+          "name" : "RDS_DB_NAME",
+          "value" : module.db.this_rds_cluster_database_name
+        },
+        {
+          "name" : "RDS_USERNAME",
+          "value" : module.db.this_rds_cluster_master_username
+        },
+        {
+          "name" : "RDS_PASSWORD",
+          "value" : tostring(module.db.this_rds_cluster_master_password)
+        },
+        {
+          "name" : "RDS_HOSTNAME",
+          "value" : module.db.this_rds_cluster_endpoint
+        },
+        {
+          "name" : "RDS_PORT",
+          "value" : tostring(module.db.this_rds_cluster_port)
+        },
+        {
+          "name" : "REDIS_HOST",
+          "value" : module.redis.endpoint
+        },
+        {
+          "name" : "REDIS_PORT",
+          "value" : tostring(module.redis.port)
+        },
+      ],
+      mountPoints = []
+      volumesFrom = []
+      logConfiguration = {
+        "logDriver" : "awslogs",
+        "options" : {
+          "awslogs-group" : aws_cloudwatch_log_group.django-log-group.id
+          "awslogs-region" : data.aws_region.current.id,
+          "awslogs-stream-prefix" : aws_cloudwatch_log_stream.django-log-stream.id
+        }
+      }
+    }
+  ])
+  network_mode = "awsvpc"
+  tags = {
+    Project = "demo_django_app"
+  }
+}
+
+# Start ECS Service for Django tasks
+resource "aws_ecs_service" "demo_django_tasks" {
+  name            = "demo_django_tasks"
+  cluster         = module.ecs_cluster.ecs_cluster_id
+  task_definition = aws_ecs_task_definition.tasks_service.arn
+  desired_count   = 1
+
+  //  enable_execute_command = true
+
+  launch_type = "FARGATE"
+
+
+  network_configuration {
+    subnets          = module.vpc.private_subnets
+    security_groups  = [module.fargate_container_sg.security_group_id]
+    assign_public_ip = false
+  }
+}
+
+resource "aws_ecs_task_definition" "tasks_service" {
+  family                   = "demo_django_tasks"
+  requires_compatibilities = ["FARGATE"]
+  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
+  cpu                      = 256
+  memory                   = 512
+  container_definitions = jsonencode([
+    {
+      name       = "django-tasks"
+      image      = "${aws_ecr_repository.demo_app.repository_url}:latest"
+      entrypoint = [""]
+      command    = ["celery", "-A", "demo_app", "worker", "-l", "INFO"],
+      cpu        = 256
+      memory     = 512
+      essential  = true
+      healthcheck = {
+        command     = ["true"]
+        interval    = 5
+        retries     = 10
+        startPeriod = 5
+        timeout     = 5
+      }
+      environment = [
+        {
+          "name" : "RDS_DB_NAME",
+          "value" : module.db.this_rds_cluster_database_name
+        },
+        {
+          "name" : "RDS_USERNAME",
+          "value" : module.db.this_rds_cluster_master_username
+        },
+        {
+          "name" : "RDS_PASSWORD",
+          "value" : tostring(module.db.this_rds_cluster_master_password)
+        },
+        {
+          "name" : "RDS_HOSTNAME",
+          "value" : module.db.this_rds_cluster_endpoint
+        },
+        {
+          "name" : "RDS_PORT",
+          "value" : tostring(module.db.this_rds_cluster_port)
+        },
+        {
+          "name" : "REDIS_HOST",
+          "value" : module.redis.endpoint
+        },
+        {
+          "name" : "REDIS_PORT",
+          "value" : tostring(module.redis.port)
+        },
+      ],
+      mountPoints = []
+      volumesFrom = []
+    }
+  ])
+  network_mode = "awsvpc"
+  tags = {
+    Project = "demo_django_app"
   }
 }
 
