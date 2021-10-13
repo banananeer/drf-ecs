@@ -21,6 +21,9 @@ from rest_framework import routers, serializers, viewsets
 
 
 # Serializers define the API representation.
+from demo_task_app.views import get_status, run_task
+
+
 class UserSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = User
@@ -41,5 +44,6 @@ urlpatterns = [
     path('', include(router.urls)),
     path('admin/', admin.site.urls),
     path('healthcheck/', healthcheck),
-    path('polls/', include('polls.urls'))
+    path("tasks/<task_id>/", get_status, name="get_status"),
+    path("tasks/", run_task),
 ]

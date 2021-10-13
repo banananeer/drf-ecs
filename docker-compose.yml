@@ -2,11 +2,32 @@ version: '3.9'
 
 services:
   web:
+    container_name: api
     build: ./src
-    command: gunicorn -w 3 -b :8000 demo_app.wsgi:application
+#    command: gunicorn -w 3 -b :8000 demo_app.wsgi:application --log-level=critical
+    command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - ./src:/usr/src/app/
     ports:
       - 1337:8000
     environment:
       - DEBUG=1
+      - REDIS_PORT=6379
+      - REDIS_HOST=redis
+    depends_on:
+      - redis
+
+  redis:
+    container_name: redis
+    image: redis
+
+  celery:
+    container_name: celery
+    build: ./src
+    command: celery -A demo_app worker -l INFO
+    volumes:
+      - ./src:/usr/src/app/
+    environment:
+      - DEBUG=1
+      - REDIS_PORT=6379
+      - REDIS_HOST=redis
