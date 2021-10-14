@@ -27,7 +27,7 @@ from demo_task_app.views import get_status, run_task
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['url', 'username', 'email', 'is_staff']
+        fields = ["url", "username", "email", "is_staff"]
 
 
 # ViewSets define the view behavior.
@@ -38,12 +38,12 @@ class UserViewSet(viewsets.ModelViewSet):
 
 # Routers provide an easy way of automatically determining the URL conf.
 router = routers.DefaultRouter()
-router.register(r'users', UserViewSet)
+router.register(r"users", UserViewSet)
 
 urlpatterns = [
-    path('', include(router.urls)),
-    path('admin/', admin.site.urls),
-    path('healthcheck/', healthcheck),
+    path("", include(router.urls)),
+    path("admin/", admin.site.urls),
+    path("healthcheck/", healthcheck),
     path("tasks/<task_id>/", get_status, name="get_status"),
     path("tasks/", run_task),
 ]

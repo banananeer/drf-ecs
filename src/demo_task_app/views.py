@@ -27,6 +27,6 @@ def get_status(request, task_id):
     result = {
         "task_id": task_id,
         "task_status": task_result.status,
-        "task_result": task_result.result
+        "task_result": task_result.result,
     }
     return Response(result, status=200)
