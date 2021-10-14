@@ -4,3 +4,4 @@
 /terraform/terraform.tfstate
 /terraform/terraform.tfstate.backup
 /.idea/
+/src/celerybeat-schedule

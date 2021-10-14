@@ -383,7 +383,7 @@ resource "aws_ecs_task_definition" "service" {
     {
       name      = "django"
       image     = "${aws_ecr_repository.demo_app.repository_url}:latest"
-      command   = ["gunicorn", "-w", "3", "-b", ":8000", "demo_app.wsgi:application"],
+      command   = ["gunicorn", "-w", "3", "-b", ":8000", "demo_proj.wsgi:application"],
       cpu       = 256
       memory    = 512
       essential = true
@@ -403,23 +403,23 @@ resource "aws_ecs_task_definition" "service" {
       }
       environment = [
         {
-          "name" : "RDS_DB_NAME",
+          "name" : "DB_NAME",
           "value" : module.db.this_rds_cluster_database_name
         },
         {
-          "name" : "RDS_USERNAME",
+          "name" : "DB_USER",
           "value" : module.db.this_rds_cluster_master_username
         },
         {
-          "name" : "RDS_PASSWORD",
+          "name" : "DB_PASSWORD",
           "value" : tostring(module.db.this_rds_cluster_master_password)
         },
         {
-          "name" : "RDS_HOSTNAME",
+          "name" : "DB_HOST",
           "value" : module.db.this_rds_cluster_endpoint
         },
         {
-          "name" : "RDS_PORT",
+          "name" : "DB_PORT",
           "value" : tostring(module.db.this_rds_cluster_port)
         },
         {
@@ -479,7 +479,7 @@ resource "aws_ecs_task_definition" "tasks_service" {
       name       = "django-tasks"
       image      = "${aws_ecr_repository.demo_app.repository_url}:latest"
       entrypoint = [""]
-      command    = ["celery", "-A", "demo_app", "worker", "-l", "INFO"],
+      command    = ["celery", "-A", "demo_proj", "worker", "-l", "INFO"],
       cpu        = 256
       memory     = 512
       essential  = true
@@ -492,23 +492,105 @@ resource "aws_ecs_task_definition" "tasks_service" {
       }
       environment = [
         {
-          "name" : "RDS_DB_NAME",
+          "name" : "DB_NAME",
           "value" : module.db.this_rds_cluster_database_name
         },
         {
-          "name" : "RDS_USERNAME",
+          "name" : "DB_USER",
           "value" : module.db.this_rds_cluster_master_username
         },
         {
-          "name" : "RDS_PASSWORD",
+          "name" : "DB_PASSWORD",
           "value" : tostring(module.db.this_rds_cluster_master_password)
         },
         {
-          "name" : "RDS_HOSTNAME",
+          "name" : "DB_HOST",
           "value" : module.db.this_rds_cluster_endpoint
         },
         {
-          "name" : "RDS_PORT",
+          "name" : "DB_PORT",
+          "value" : tostring(module.db.this_rds_cluster_port)
+        },
+        {
+          "name" : "REDIS_HOST",
+          "value" : module.redis.endpoint
+        },
+        {
+          "name" : "REDIS_PORT",
+          "value" : tostring(module.redis.port)
+        },
+      ],
+      mountPoints = []
+      volumesFrom = []
+    }
+  ])
+  network_mode = "awsvpc"
+  tags = {
+    Project = "demo_django_app"
+  }
+}
+
+
+# STart ECS Service for Celery Beat
+resource "aws_ecs_service" "demo_django_scheduler" {
+  name            = "demo_django_scheduler"
+  cluster         = module.ecs_cluster.ecs_cluster_id
+  task_definition = aws_ecs_task_definition.scheduler_service.arn
+  desired_count   = 1
+
+  //  enable_execute_command = true
+
+  launch_type = "FARGATE"
+
+
+  network_configuration {
+    subnets          = module.vpc.private_subnets
+    security_groups  = [module.fargate_container_sg.security_group_id]
+    assign_public_ip = false
+  }
+}
+
+resource "aws_ecs_task_definition" "scheduler_service" {
+  family                   = "demo_django_scheduler"
+  requires_compatibilities = ["FARGATE"]
+  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
+  cpu                      = 256
+  memory                   = 512
+  container_definitions = jsonencode([
+    {
+      name       = "django-scheduler"
+      image      = "${aws_ecr_repository.demo_app.repository_url}:latest"
+      entrypoint = [""]
+      command    = ["celery", "-A", "demo_proj", "beat", "-l", "INFO"],
+      cpu        = 256
+      memory     = 512
+      essential  = true
+      healthcheck = {
+        command     = ["true"]
+        interval    = 5
+        retries     = 10
+        startPeriod = 5
+        timeout     = 5
+      }
+      environment = [
+        {
+          "name" : "DB_NAME",
+          "value" : module.db.this_rds_cluster_database_name
+        },
+        {
+          "name" : "DB_USER",
+          "value" : module.db.this_rds_cluster_master_username
+        },
+        {
+          "name" : "DB_PASSWORD",
+          "value" : tostring(module.db.this_rds_cluster_master_password)
+        },
+        {
+          "name" : "DB_HOST",
+          "value" : module.db.this_rds_cluster_endpoint
+        },
+        {
+          "name" : "DB_PORT",
           "value" : tostring(module.db.this_rds_cluster_port)
         },
         {
