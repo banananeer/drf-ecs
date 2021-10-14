@@ -8,7 +8,6 @@ services:
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - ./src:/usr/src/app/
-      - ./entrypoint.sh:/usr/src/app/entrypoint.sh
     ports:
       - 1337:8000
     environment:
@@ -34,7 +33,6 @@ services:
     command: celery -A demo_proj worker -l INFO
     volumes:
       - ./src:/usr/src/app/
-      - ./entrypoint.sh:/usr/src/app/entrypoint.sh
     environment:
       - DEBUG=1
       - REDIS_PORT=6379
@@ -49,7 +47,6 @@ services:
     command: celery -A demo_proj beat -l INFO
     volumes:
       - ./src:/usr/src/app/
-      - ./entrypoint.sh:/usr/src/app/entrypoint.sh
     environment:
       - DEBUG=1
       - REDIS_PORT=6379

@@ -29,9 +29,6 @@ RUN apt-get update \
   && apt-get -y install gcc postgresql \
   && apt-get clean
 
-# copy entrypoint.sh
-COPY entrypoint.sh /usr/src/app/entrypoint.sh
-
 # copy project
 COPY src /usr/src/app/
 
