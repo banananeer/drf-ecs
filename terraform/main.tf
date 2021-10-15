@@ -274,7 +274,11 @@ resource "aws_iam_role" "ecs_task_execution_role" {
             "ecr:GetDownloadUrlForLayer",
             "ecr:BatchGetImage",
             "logs:CreateLogStream",
-            "logs:PugLogEvents"
+            "logs:PugLogEvents",
+            "ssmmessages:CreateControlChannel",
+            "ssmmessages:CreateDataChannel",
+            "ssmmessages:OpenControlChannel",
+            "ssmmessages:OpenDataChannel"
           ]
           Effect   = "Allow"
           Resource = "*"
@@ -288,7 +292,7 @@ resource "aws_iam_role" "ecs_task_execution_role" {
   }
 }
 
-resource "aws_iam_role" "ecs_role" {
+resource "aws_iam_role" "ecs_task_role" {
   name = "ecs_role_policy"
   path = "/"
   # Terraform's "jsonencode" function converts a
@@ -301,7 +305,7 @@ resource "aws_iam_role" "ecs_role" {
         Effect = "Allow"
         Sid    = ""
         Principal = {
-          Service = "ecs.amazonaws.com"
+          Service = "ecs-tasks.amazonaws.com"
         }
       },
     ]
@@ -339,6 +343,13 @@ resource "aws_iam_role" "ecs_role" {
   }
 }
 
+# Policy Attachment for an instance to perform ssm functions
+resource "aws_iam_role_policy_attachment" "ssm_attachment" {
+  role       = aws_iam_role.ecs_task_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+
 # Start ECS Service for Django application
 resource "aws_cloudwatch_log_group" "django-log-group" {
   name              = "/ecs/demo-django-app"
@@ -356,7 +367,7 @@ resource "aws_ecs_service" "demo_django_app" {
   task_definition = aws_ecs_task_definition.service.arn
   desired_count   = 2
 
-#  enable_execute_command = true
+  enable_execute_command = true
 
   launch_type = "FARGATE"
 
@@ -377,6 +388,7 @@ resource "aws_ecs_task_definition" "service" {
   family                   = "demo_django_app"
   requires_compatibilities = ["FARGATE"]
   execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
+  task_role_arn            = aws_iam_role.ecs_task_role.arn
   cpu                      = 256
   memory                   = 512
   container_definitions = jsonencode([
@@ -441,6 +453,9 @@ resource "aws_ecs_task_definition" "service" {
           "awslogs-stream-prefix" : aws_cloudwatch_log_stream.django-log-stream.id
         }
       }
+      linuxParameters = {
+        "initProcessEnabled" : true
+      }
     }
   ])
   network_mode = "awsvpc"
@@ -456,7 +471,7 @@ resource "aws_ecs_service" "demo_django_tasks" {
   task_definition = aws_ecs_task_definition.tasks_service.arn
   desired_count   = 1
 
-  //  enable_execute_command = true
+  enable_execute_command = true
 
   launch_type = "FARGATE"
 
@@ -472,6 +487,7 @@ resource "aws_ecs_task_definition" "tasks_service" {
   family                   = "demo_django_tasks"
   requires_compatibilities = ["FARGATE"]
   execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
+  task_role_arn            = aws_iam_role.ecs_task_role.arn
   cpu                      = 256
   memory                   = 512
   container_definitions = jsonencode([
@@ -522,6 +538,9 @@ resource "aws_ecs_task_definition" "tasks_service" {
       ],
       mountPoints = []
       volumesFrom = []
+      linuxParameters = {
+        "initProcessEnabled" : true
+      }
     }
   ])
   network_mode = "awsvpc"
@@ -538,7 +557,7 @@ resource "aws_ecs_service" "demo_django_scheduler" {
   task_definition = aws_ecs_task_definition.scheduler_service.arn
   desired_count   = 1
 
-  //  enable_execute_command = true
+  enable_execute_command = true
 
   launch_type = "FARGATE"
 
@@ -554,6 +573,7 @@ resource "aws_ecs_task_definition" "scheduler_service" {
   family                   = "demo_django_scheduler"
   requires_compatibilities = ["FARGATE"]
   execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
+  task_role_arn            = aws_iam_role.ecs_task_role.arn
   cpu                      = 256
   memory                   = 512
   container_definitions = jsonencode([
@@ -604,6 +624,9 @@ resource "aws_ecs_task_definition" "scheduler_service" {
       ],
       mountPoints = []
       volumesFrom = []
+      linuxParameters = {
+        "initProcessEnabled" : true
+      }
     }
   ])
   network_mode = "awsvpc"
@@ -613,7 +636,7 @@ resource "aws_ecs_task_definition" "scheduler_service" {
 }
 
 resource "local_file" "update_service" {
-  filename = "../src/update_service.sh"
+  filename = "../update_service.sh"
   content  = <<EOF
 #!/bin/bash
 
