@@ -1,0 +1,3 @@
+/src/db.sqlite3
+/src/celerybeat-schedule
+/src/pytest.ini

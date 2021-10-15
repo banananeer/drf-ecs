@@ -44,7 +44,7 @@ services:
   scheduler:
     container_name: scheduler
     build: .
-    command: celery -A demo_proj beat -l INFO
+    command: celery -A demo_proj beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
     volumes:
       - ./src:/usr/src/app/
     environment:

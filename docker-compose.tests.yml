@@ -7,9 +7,5 @@ services:
       dockerfile: 'Dockerfile.tests'
     entrypoint: ''
     command: ''
-    volumes:
-      - './src:/usr/src/app'
-      - './tests:/usr/src/app/tests'
-      - './pytest.ini:/usr/src/app/pytest.ini'
     networks:
       - default
