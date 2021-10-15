@@ -14,7 +14,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: checkout@v2
+        uses: actions/checkout@v2
 
       - name: Run Tests
         run: ./tests/unit_tests.sh
