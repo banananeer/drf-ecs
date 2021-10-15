@@ -1,0 +1,20 @@
+on:
+  # Trigger the workflow on push or pull request,
+  # but only for the main branch
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  Unit Tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: checkout@v2
+
+      - name: Run Tests
+        run: ./tests/unit_tests.sh
