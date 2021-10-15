@@ -37,6 +37,11 @@ services:
       - DEBUG=1
       - REDIS_PORT=6379
       - REDIS_HOST=redis
+      - DB_NAME=hello_django_dev
+      - DB_USER=hello_django
+      - DB_PASSWORD=hello_django
+      - DB_HOST=db
+      - DB_PORT=5432
     depends_on:
       - redis
       - db
@@ -51,6 +56,11 @@ services:
       - DEBUG=1
       - REDIS_PORT=6379
       - REDIS_HOST=redis
+      - DB_NAME=hello_django_dev
+      - DB_USER=hello_django
+      - DB_PASSWORD=hello_django
+      - DB_HOST=db
+      - DB_PORT=5432
     depends_on:
       - redis
       - db

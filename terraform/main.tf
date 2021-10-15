@@ -641,9 +641,9 @@ resource "local_file" "update_service" {
 #!/bin/bash
 
 aws ecr get-login-password --region ${data.aws_region.current.name} | docker login --username AWS --password-stdin ${data.aws_caller_identity.current.account_id}.dkr.ecr.us-east-1.amazonaws.com
-sudo docker build -t demo_django_app .
-sudo docker tag demo_django_app:latest ${aws_ecr_repository.demo_app.repository_url}:latest
-sudo docker push ${aws_ecr_repository.demo_app.repository_url}:latest
+docker build -t demo_django_app .
+docker tag demo_django_app:latest ${aws_ecr_repository.demo_app.repository_url}:latest
+docker push ${aws_ecr_repository.demo_app.repository_url}:latest
 
 ecs-deploy -r ${data.aws_region.current.id} -c ${module.ecs_cluster.ecs_cluster_name} -n ${aws_ecs_service.demo_django_app.name} -i ${aws_ecr_repository.demo_app.repository_url}:latest -t 600
 ecs-deploy -r ${data.aws_region.current.id} -c ${module.ecs_cluster.ecs_cluster_name} -n ${aws_ecs_service.demo_django_tasks.name} -i ${aws_ecr_repository.demo_app.repository_url}:latest -t 600

@@ -20,3 +20,7 @@ These are things to add to this example in no particular order of importance.
 - Add unit tests with pytest
 - Add github workflow for running unit tests
 - Fix logging to cloudwatch
+
+## Resources
+- Open docker TCP port on Ubuntu (necessary to run a remote python interpreter using docker) - https://medium.com/@ssmak/how-to-enable-docker-remote-api-on-docker-host-7b73bd3278c6
+- 
