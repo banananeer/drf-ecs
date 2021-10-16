@@ -20,5 +20,7 @@ These are things to add to this example in no particular order of importance.
 - Fix logging to cloudwatch
 
 ## Resources
-- Open docker TCP port on Ubuntu (necessary to run a remote python interpreter using docker) - https://medium.com/@ssmak/how-to-enable-docker-remote-api-on-docker-host-7b73bd3278c6
-- 
+- [Installing Docker](https://docs.docker.com/engine/install/linux-postinstall/)
+- [Post Install Docker Steps (for Linux users)](https://docs.docker.com/engine/install/linux-postinstall/)
+- [Installing Docker Compose](https://docs.docker.com/compose/install/#install-compose)
+- [Open docker TCP port on Ubuntu (necessary to run a remote python interpreter using docker)](https://medium.com/@ssmak/how-to-enable-docker-remote-api-on-docker-host-7b73bd3278c6)
