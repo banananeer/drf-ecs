@@ -274,7 +274,7 @@ resource "aws_iam_role" "ecs_task_execution_role" {
             "ecr:GetDownloadUrlForLayer",
             "ecr:BatchGetImage",
             "logs:CreateLogStream",
-            "logs:PugLogEvents",
+            "logs:PutLogEvents",
             "ssmmessages:CreateControlChannel",
             "ssmmessages:CreateDataChannel",
             "ssmmessages:OpenControlChannel",
@@ -307,7 +307,7 @@ resource "aws_iam_role" "ecs_task_role" {
         Principal = {
           Service = "ecs-tasks.amazonaws.com"
         }
-      },
+      }
     ]
   })
 
@@ -330,12 +330,13 @@ resource "aws_iam_role" "ecs_task_role" {
             "elasticloadbalancing:Describe*",
             "elasticloadbalancing:RegisterInstancesWithLoadBalancer",
             "elasticloadbalancing:RegisterInstancesWithLoadBalancer",
+            "logs:CreateLogStream",
+            "logs:PutLogEvents",
           ]
           Effect   = "Allow"
           Resource = "*"
       }]
     })
-
   }
 
   tags = {
@@ -395,7 +396,7 @@ resource "aws_ecs_task_definition" "service" {
     {
       name      = "django"
       image     = "${aws_ecr_repository.demo_app.repository_url}:latest"
-      command   = ["gunicorn", "-w", "3", "-b", ":8000", "demo_proj.wsgi:application"],
+      command   = ["gunicorn", "demo_proj.wsgi:application", "-c", "../service_configs/gunicorn.py"],
       cpu       = 256
       memory    = 512
       essential = true
