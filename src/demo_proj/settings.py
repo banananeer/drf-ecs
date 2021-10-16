@@ -177,4 +177,5 @@ LOGGING = {
         },
     },
     "root": {"level": "INFO", "handlers": ["console"]},
+    "loggers": {"": {"handlers": ["console"], "level": "DEBUG"}},
 }
