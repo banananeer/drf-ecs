@@ -465,6 +465,16 @@ resource "aws_ecs_task_definition" "service" {
 }
 
 # Start ECS Service for Django tasks
+resource "aws_cloudwatch_log_group" "tasks-log-group" {
+  name              = "/ecs/demo-django-tasks"
+  retention_in_days = 7
+}
+
+resource "aws_cloudwatch_log_stream" "tasks-log-stream" {
+  name           = "demo-django-tasks-log-stream"
+  log_group_name = aws_cloudwatch_log_group.django-log-group.name
+}
+
 resource "aws_ecs_service" "demo_django_tasks" {
   name            = "demo_django_tasks"
   cluster         = module.ecs_cluster.ecs_cluster_id
@@ -541,6 +551,14 @@ resource "aws_ecs_task_definition" "tasks_service" {
       linuxParameters = {
         "initProcessEnabled" : true
       }
+      logConfiguration = {
+        "logDriver" : "awslogs",
+        "options" : {
+          "awslogs-group" : aws_cloudwatch_log_group.tasks-log-group.id
+          "awslogs-region" : data.aws_region.current.id,
+          "awslogs-stream-prefix" : aws_cloudwatch_log_stream.tasks-log-stream.id
+        }
+      }
     }
   ])
   network_mode = "awsvpc"
@@ -551,6 +569,16 @@ resource "aws_ecs_task_definition" "tasks_service" {
 
 
 # STart ECS Service for Celery Beat
+resource "aws_cloudwatch_log_group" "scheduler-log-group" {
+  name              = "/ecs/demo-django-scheduler"
+  retention_in_days = 7
+}
+
+resource "aws_cloudwatch_log_stream" "scheduler-log-stream" {
+  name           = "demo-django-scheduler-log-stream"
+  log_group_name = aws_cloudwatch_log_group.django-log-group.name
+}
+
 resource "aws_ecs_service" "demo_django_scheduler" {
   name            = "demo_django_scheduler"
   cluster         = module.ecs_cluster.ecs_cluster_id
@@ -627,6 +655,14 @@ resource "aws_ecs_task_definition" "scheduler_service" {
       linuxParameters = {
         "initProcessEnabled" : true
       }
+      logConfiguration = {
+        "logDriver" : "awslogs",
+        "options" : {
+          "awslogs-group" : aws_cloudwatch_log_group.scheduler-log-group.id
+          "awslogs-region" : data.aws_region.current.id,
+          "awslogs-stream-prefix" : aws_cloudwatch_log_stream.scheduler-log-stream.id
+        }
+      }
     }
   ])
   network_mode = "awsvpc"
@@ -647,6 +683,7 @@ docker push ${aws_ecr_repository.demo_app.repository_url}:latest
 
 ecs-deploy -r ${data.aws_region.current.id} -c ${module.ecs_cluster.ecs_cluster_name} -n ${aws_ecs_service.demo_django_app.name} -i ${aws_ecr_repository.demo_app.repository_url}:latest -t 600
 ecs-deploy -r ${data.aws_region.current.id} -c ${module.ecs_cluster.ecs_cluster_name} -n ${aws_ecs_service.demo_django_tasks.name} -i ${aws_ecr_repository.demo_app.repository_url}:latest -t 600
+ecs-deploy -r ${data.aws_region.current.id} -c ${module.ecs_cluster.ecs_cluster_name} -n ${aws_ecs_service.demo_django_scheduler.name} -i ${aws_ecr_repository.demo_app.repository_url}:latest -t 600
 EOF
 
 }
