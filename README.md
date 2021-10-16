@@ -17,8 +17,6 @@ The commands for the task definitions will be different.
 These are things to add to this example in no particular order of importance.
 
 - Use encryption on redis cluster
-- Add unit tests with pytest
-- Add github workflow for running unit tests
 - Fix logging to cloudwatch
 
 ## Resources
