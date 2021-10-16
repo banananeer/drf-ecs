@@ -17,7 +17,6 @@ The commands for the task definitions will be different.
 These are things to add to this example in no particular order of importance.
 
 - Use encryption on redis cluster
-- Fix logging to cloudwatch
 
 ## Resources
 - [Installing Docker](https://docs.docker.com/engine/install/linux-postinstall/)
