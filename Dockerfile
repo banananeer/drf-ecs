@@ -32,5 +32,8 @@ RUN apt-get update \
 # copy project
 COPY src /usr/src/app/
 
+RUN mkdir /usr/src/service_configs
+COPY service_configs /usr/src/service_configs/
+
 # run entrypoint.sh
 ENTRYPOINT ["/usr/src/app/entrypoint.sh"]

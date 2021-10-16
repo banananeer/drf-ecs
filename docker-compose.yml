@@ -4,7 +4,7 @@ services:
   web:
     container_name: api
     build: .
-    command: gunicorn -w 3 -b :8000 demo_proj.wsgi:application --log-level=info
+    command: gunicorn demo_proj.wsgi:application -c ../service_configs/gunicorn.py
     volumes:
       - ./src:/usr/src/app/
     ports:
