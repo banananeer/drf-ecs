@@ -12,11 +12,6 @@ The commands for the task definitions will be different.
 - golang
 - nodejs
 
-## To Do
-
-These are things to add to this example in no particular order of importance.
-
-- Use encryption on redis cluster
 
 ## Resources
 - [Installing Docker](https://docs.docker.com/engine/install/linux-postinstall/)
