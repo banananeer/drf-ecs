@@ -12,6 +12,9 @@ The commands for the task definitions will be different.
 - golang
 - nodejs
 
+## Cost
+With a minimal amount of traffic, this infrastructure configuration in AWS costs ~$5-$6/day to run.
+
 
 ## Resources
 - [Installing Docker](https://docs.docker.com/engine/install/linux-postinstall/)
